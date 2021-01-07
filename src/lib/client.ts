@@ -4,13 +4,6 @@ export const createClient = (
   redisUrl: string,
   redisAuth?: string
 ) => {
-  const client = new Redis(redisPort, redisUrl)
-  if (redisAuth) {
-    client.auth(redisAuth, function(err) {
-      if (err) {
-        throw err
-      }
-    })
-  }
+  const client = new Redis(redisPort, redisUrl, { password: redisAuth })
   return client
 }
