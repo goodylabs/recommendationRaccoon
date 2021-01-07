@@ -13,10 +13,11 @@ services:
     environment:
       PORT: 8080
       RACCOON_REDIS_URL: redis
-
+      RACCOON_REDIS_AUTH: secret
       
     depends_on:
       - redis
 
   redis:
     image: redis
+    command: redis-server --requirepass secret
