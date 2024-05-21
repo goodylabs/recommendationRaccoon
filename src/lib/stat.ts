@@ -84,6 +84,11 @@ export const usersWhoLikedAlsoLiked = async function(
   // Prepare the keys for the liked sets of these users
   const likedSetKeys = users.map(userId => userLikedSetKey(className, userId));
 
+  // Return empty array if there are no users who liked the item
+  if(likedSetKeys.length === 0) {
+    return [];
+  }
+
   // Create a temporary key for the union set
   const tempKey = `usersWhoLikedAlsoLiked:${itemId}`;
 
