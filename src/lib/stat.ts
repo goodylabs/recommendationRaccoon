@@ -73,13 +73,33 @@ export const mostLiked = function(client: Redis, className: string) {
 export const mostDisliked = function(client: Redis, className: string) {
   return client.zrevrange(mostDislikedKey(className), 0, -1)
 }
-export const usersWhoLikedAlsoLiked = function(
+export const usersWhoLikedAlsoLiked = async function(
   client: Redis,
   className: string,
   itemId: string
 ) {
-  console.log(itemId)
-  throw new Error('not yet implement')
+  // Get the set of users who liked the item
+  const users = await client.smembers(itemLikedBySetKey(className, itemId));
+
+  // Prepare the keys for the liked sets of these users
+  const likedSetKeys = users.map(userId => userLikedSetKey(className, userId));
+
+  // Create a temporary key for the union set
+  const tempKey = `usersWhoLikedAlsoLiked:${itemId}`;
+
+  // Perform the union and store the result in the temporary set
+  await client.sunionstore(tempKey, ...likedSetKeys);
+
+  // Retrieve the items from the temporary set
+  let items = await client.smembers(tempKey);
+
+  // Delete the temporary set
+  await client.del(tempKey);
+
+  // Exclude the input item from the result
+  items = items.filter(item => item !== itemId);
+
+  return items;
 }
 export const mostSimilarUsers = function(
   client: Redis,

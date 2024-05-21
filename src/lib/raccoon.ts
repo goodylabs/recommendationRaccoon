@@ -32,7 +32,8 @@ import {
   allLikedFor,
   allDislikedFor,
   allWatchedFor,
-  recommendForWithScores
+  recommendForWithScores,
+  usersWhoLikedAlsoLiked
 } from './stat'
 
 export default class Raccoon {
@@ -161,6 +162,10 @@ export default class Raccoon {
 
   allWatchedFor(userId: string) {
     return allWatchedFor(this.client, this.config.className, userId)
+  }
+
+  usersWhoLikedAlsoLiked(itemId: string) {
+    return usersWhoLikedAlsoLiked(this.client, this.config.className, itemId)
   }
 
   close() {

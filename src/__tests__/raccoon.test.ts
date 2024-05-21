@@ -208,6 +208,20 @@ describe('stats1', function() {
     expect(leastSimilarUsers[0]).toBe(undefined)
   })
 
+  it('should return proper values from usersWhoLikedAlsoLiked', async () => {
+    await raccoon.liked('andrew', 'superman')
+    await raccoon.liked('andrew', 'iceage')
+    await raccoon.liked('pat', 'superman')
+    await raccoon.liked('pat', 'iceage')
+    await raccoon.liked('mat', 'superman')
+    await raccoon.liked('mat', 'iceage')
+
+    const usersWhoLikedAlsoLiked = await raccoon.usersWhoLikedAlsoLiked('superman')
+
+    expect(usersWhoLikedAlsoLiked.includes('batman')).toBe(true)
+    expect(usersWhoLikedAlsoLiked.includes('iceage')).toBe(true)
+  })
+
   afterAll(async () => {
     raccoon.close()
   })
