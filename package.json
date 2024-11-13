@@ -20,7 +20,8 @@
     "lodash": "^4.17.15",
     "p-all": "^2.1.0",
     "p-map": "^3.0.0",
-    "redis": "~2.6.x"
+    "redis": "~2.6.x",
+    "winston": "^3.11.0"
   },
   "main": "./dist/index.js",
   "types": "dist/index.d.ts",

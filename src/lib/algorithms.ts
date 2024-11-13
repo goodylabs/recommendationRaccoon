@@ -10,6 +10,7 @@ import {
   scoreboardZSetKey
 } from './key'
 import { Redis } from 'ioredis'
+import Config from "./config";
 
 // the jaccard coefficient outputs an objective measurement of the similarity between two objects. in this case, two users. the coefficient
 // is the result of summing the two users likes/dislikes incommon then summing they're likes/dislikes that they disagree on. this sum is
@@ -240,15 +241,16 @@ export const updateRecommendationsFor = async function(
 // outliers. the wilson score is a value between 0 and 1.
 export const updateWilsonScore = async function(
   client: Redis,
-  className: string,
+  config: Config,
   itemId: string
 ) {
+  const { className, logger } = config
   // creating the redis keys for scoreboard and to get the items liked and disliked sets
   const scoreboard = scoreboardZSetKey(className)
   const likedBySet = itemLikedBySetKey(className, itemId)
   const dislikedBySet = itemDislikedBySetKey(className, itemId)
 
-  console.log(`[Raccoon] updateWilsonScore: ${itemId} - scoreboard: ${scoreboard}, likedBySet: ${likedBySet}, dislikedBySet: ${dislikedBySet}`)
+  logger.info(`[Raccoon] updateWilsonScore: ${itemId} - scoreboard: ${scoreboard}, likedBySet: ${likedBySet}, dislikedBySet: ${dislikedBySet}`)
   // used for a confidence interval of 95%
   const z = 1.96
   // initializing variables to calculate wilson score
@@ -257,19 +259,19 @@ export const updateWilsonScore = async function(
   const likedResults = await client.scard(likedBySet)
   const dislikedResults = await client.scard(dislikedBySet)
 
-  console.log(`[Raccoon] updateWilsonScore: ${itemId} - likedResults: ${likedResults}, dislikedResults: ${dislikedResults}`)
+  logger.info(`[Raccoon] updateWilsonScore: ${itemId} - likedResults: ${likedResults}, dislikedResults: ${dislikedResults}`)
 
   if (likedResults + dislikedResults > 0) {
     // set n to the sum of the total ratings for the item
     n = likedResults + dislikedResults
 
-    console.log(`[Raccoon] updateWilsonScore: ${itemId} - n: ${n}`)
+    logger.info(`[Raccoon] updateWilsonScore: ${itemId} - n: ${n}`)
     // set pOS to the num of liked results divided by the number rated
     // pOS represents the proportion of successes or likes in this case
     // pOS = likedResults / parseFloat(n);
     pOS = likedResults / n
 
-    console.log(`[Raccoon] updateWilsonScore: ${itemId} - pOS: ${pOS}`)
+    logger.info(`[Raccoon] updateWilsonScore: ${itemId} - pOS: ${pOS}`)
     // try the following equation
     try {
       // calculating the wilson score
@@ -280,15 +282,15 @@ export const updateWilsonScore = async function(
           z * Math.sqrt((pOS * (1 - pOS) + (z * z) / (4 * n)) / n)) /
         (1 + (z * z) / n)
 
-      console.log(`[Raccoon] updateWilsonScore: ${itemId} - score: ${score}`)
+      logger.info(`[Raccoon] updateWilsonScore: ${itemId} - score: ${score}`)
     } catch (e) {
       // if an error occurs, set the score to 0.0 and console log the error message.
-      console.log(`[Raccoon] updateWilsonScore: ${itemId} - error: ${e.name} : ${e.message}`)
-      console.log(e.name + ': ' + e.message)
+      logger.info(`[Raccoon] updateWilsonScore: ${itemId} - error: ${e.name} : ${e.message}`)
+      logger.info(e.name + ': ' + e.message)
       score = 0.0
     }
     // add that score to the overall scoreboard. if that item already exists, the score will be updated.
-    console.log(`[Raccoon] updateWilsonScore: ${itemId} - scoreboard: ${scoreboard}, score: ${score}, itemId: ${itemId}`)
+    logger.info(`[Raccoon] updateWilsonScore: ${itemId} - scoreboard: ${scoreboard}, score: ${score}, itemId: ${itemId}`)
     await client.zadd(scoreboard, score.toString(), itemId)
   }
 }

@@ -1,3 +1,7 @@
+import { createLogger, transports, Logger } from "winston";
+
+const activeTransports: any[] = [new transports.Console()];
+
 export interface ConfigArgs {
   nearestNeighbors?: number
   className?: string
@@ -6,6 +10,7 @@ export interface ConfigArgs {
   redisUrl?: string
   redisPort?: number
   redisAuth?: string
+  logger?: Logger
 }
 
 export default class Config {
@@ -16,6 +21,7 @@ export default class Config {
   redisUrl: string
   redisPort: number
   redisAuth: string
+  logger: Logger
   constructor({
     nearestNeighbors,
     className,
@@ -23,7 +29,8 @@ export default class Config {
     factorLeastSimilarLeastLiked,
     redisUrl,
     redisPort,
-    redisAuth
+    redisAuth,
+    logger,
   }: ConfigArgs) {
     this.nearestNeighbors = nearestNeighbors || 5
     this.className = className || 'movie'
@@ -36,5 +43,16 @@ export default class Config {
         ? parseInt(process.env.RACCOON_REDIS_PORT)
         : 6379)
     this.redisAuth = redisAuth || process.env.RACCOON_REDIS_AUTH || ''
+
+    if (logger) {
+      this.logger = logger
+    } else {
+      this.logger = createLogger({
+        level: 'error',
+        exitOnError: false,
+        transports: activeTransports,
+      });
+    }
+
   }
 }

@@ -87,7 +87,7 @@ export default class Raccoon {
   }
 
   updateWilsonScore(itemId: string) {
-    return updateWilsonScore(this.client, this.config.className, itemId)
+    return updateWilsonScore(this.client, this.config, itemId)
   }
 
   recommendFor(userId: string, numberOfRecs: number) {

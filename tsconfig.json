@@ -13,7 +13,9 @@
         "noUnusedLocals": true,
         "outDir": "./dist",
         "sourceMap": true,
-        "declaration": true
+        "declaration": true,
+        /* Should be removed - caused by winston */
+        "skipLibCheck": true,
     },
     "include": [
         "src/**/*"
