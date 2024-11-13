@@ -247,6 +247,8 @@ export const updateWilsonScore = async function(
   const scoreboard = scoreboardZSetKey(className)
   const likedBySet = itemLikedBySetKey(className, itemId)
   const dislikedBySet = itemDislikedBySetKey(className, itemId)
+
+  console.log(`[Raccoon] updateWilsonScore: ${itemId} - scoreboard: ${scoreboard}, likedBySet: ${likedBySet}, dislikedBySet: ${dislikedBySet}`)
   // used for a confidence interval of 95%
   const z = 1.96
   // initializing variables to calculate wilson score
@@ -255,13 +257,19 @@ export const updateWilsonScore = async function(
   const likedResults = await client.scard(likedBySet)
   const dislikedResults = await client.scard(dislikedBySet)
 
+  console.log(`[Raccoon] updateWilsonScore: ${itemId} - likedResults: ${likedResults}, dislikedResults: ${dislikedResults}`)
+
   if (likedResults + dislikedResults > 0) {
     // set n to the sum of the total ratings for the item
     n = likedResults + dislikedResults
+
+    console.log(`[Raccoon] updateWilsonScore: ${itemId} - n: ${n}`)
     // set pOS to the num of liked results divided by the number rated
     // pOS represents the proportion of successes or likes in this case
     // pOS = likedResults / parseFloat(n);
     pOS = likedResults / n
+
+    console.log(`[Raccoon] updateWilsonScore: ${itemId} - pOS: ${pOS}`)
     // try the following equation
     try {
       // calculating the wilson score
@@ -271,12 +279,16 @@ export const updateWilsonScore = async function(
           (z * z) / (2 * n) -
           z * Math.sqrt((pOS * (1 - pOS) + (z * z) / (4 * n)) / n)) /
         (1 + (z * z) / n)
+
+      console.log(`[Raccoon] updateWilsonScore: ${itemId} - score: ${score}`)
     } catch (e) {
       // if an error occurs, set the score to 0.0 and console log the error message.
+      console.log(`[Raccoon] updateWilsonScore: ${itemId} - error: ${e.name} : ${e.message}`)
       console.log(e.name + ': ' + e.message)
       score = 0.0
     }
     // add that score to the overall scoreboard. if that item already exists, the score will be updated.
+    console.log(`[Raccoon] updateWilsonScore: ${itemId} - scoreboard: ${scoreboard}, score: ${score}, itemId: ${itemId}`)
     await client.zadd(scoreboard, score.toString(), itemId)
   }
 }
