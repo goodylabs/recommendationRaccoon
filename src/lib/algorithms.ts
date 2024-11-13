@@ -30,14 +30,14 @@ const jaccardCoefficient = async function(
   const user2LikedSet = userLikedSetKey(className, userId2)
   const user2DislikedSet = userDislikedSetKey(className, userId2)
 
-  logger.info(`[Raccoon] jaccardCoefficient: ${userId1} - user1LikedSet: ${user1LikedSet}, user1DislikedSet: ${user1DislikedSet}, user2LikedSet: ${user2LikedSet}, user2DislikedSet: ${user2DislikedSet}`)
+  logger.debug(`[Raccoon] jaccardCoefficient: ${userId1} - user1LikedSet: ${user1LikedSet}, user1DislikedSet: ${user1DislikedSet}, user2LikedSet: ${user2LikedSet}, user2DislikedSet: ${user2DislikedSet}`)
   // retrieving a set of the users likes incommon
   const results1 = await client.sinter(user1LikedSet, user2LikedSet)
   const results2 = await client.sinter(user1DislikedSet, user2DislikedSet)
   const results3 = await client.sinter(user1LikedSet, user2DislikedSet)
   const results4 = await client.sinter(user1DislikedSet, user2LikedSet)
 
-  logger.info(`[Raccoon] jaccardCoefficient: ${userId1} - results1: ${results1}, results2: ${results2}, results3: ${results3}, results4: ${results4}`)
+  logger.debug(`[Raccoon] jaccardCoefficient: ${userId1} - results1: ${results1}, results2: ${results2}, results3: ${results3}, results4: ${results4}`)
 
   const similarity =
     results1.length + results2.length - results3.length - results4.length
@@ -46,7 +46,13 @@ const jaccardCoefficient = async function(
     results1.length + results2.length + results3.length + results4.length
   // calculating the the modified jaccard score. similarity / num of comparisons made incommon
 
-  logger.info(`[Raccoon] jaccardCoefficient: ${userId1} - similarity: ${similarity}, ratedInCommon: ${ratedInCommon}`)
+  logger.debug(`[Raccoon] jaccardCoefficient: ${userId1} - similarity: ${similarity}, ratedInCommon: ${ratedInCommon}`)
+  
+  if(ratedInCommon === 0) {
+    logger.info(`[Raccoon] jaccardCoefficient: user1: ${userId1}, user2: ${userId2} - ratedInCommon is 0`)
+    return 0;
+  }
+  
   const finalJaccardScore: number = similarity / ratedInCommon
   // calling the callback function passed to jaccard with the new score
   return finalJaccardScore
@@ -75,7 +81,7 @@ export const updateSimilarityFor = async function(
     userDislikedSetKey(className, userId)
   )
 
-  logger.info(`[Raccoon] updateSimilarityFor: ${userId} - userRatedItemIds: ${userRatedItemIds}`)
+  logger.debug(`[Raccoon] updateSimilarityFor: ${userId} - userRatedItemIds: ${userRatedItemIds}`)
   // if they have rated anything
   if (userRatedItemIds.length > 0) {
     // creating a list of redis keys to look up all of the likes and dislikes for a given set of items
@@ -91,13 +97,13 @@ export const updateSimilarityFor = async function(
       .flat()
   }
 
-  logger.info(`[Raccoon] updateSimilarityFor: ${userId} - itemLikeDislikeKeys: ${itemLikeDislikeKeys}`)
+  logger.debug(`[Raccoon] updateSimilarityFor: ${userId} - itemLikeDislikeKeys: ${itemLikeDislikeKeys}`)
   // flattening the array of all the likes/dislikes for the items a user rated
   // itemLikeDislikeKeys = _.flatten(itemLikeDislikeKeys);
   // builds one set of all the users who liked and disliked the same items
   const otherUserIdsWhoRated = await client.sunion(...itemLikeDislikeKeys)
 
-  logger.info(`[Raccoon] updateSimilarityFor: ${userId} - otherUserIdsWhoRated: ${otherUserIdsWhoRated}`)
+  logger.debug(`[Raccoon] updateSimilarityFor: ${userId} - otherUserIdsWhoRated: ${otherUserIdsWhoRated}`)
 
   await pMap(otherUserIdsWhoRated, async otherUserId => {
     // if there is only one other user or the other user is the same user
@@ -116,7 +122,7 @@ export const updateSimilarityFor = async function(
         otherUserId
       )
 
-      logger.info(`[Raccoon] updateSimilarityFor: ${userId} - otherUserId: ${otherUserId}, result: ${result}`)
+      logger.debug(`[Raccoon] updateSimilarityFor: ${userId} - otherUserId: ${otherUserId}, result: ${result}`)
       await client.zadd(similarityZSet, result.toString(), otherUserId)
     }
   })
@@ -267,7 +273,7 @@ export const updateWilsonScore = async function(
   const likedBySet = itemLikedBySetKey(className, itemId)
   const dislikedBySet = itemDislikedBySetKey(className, itemId)
 
-  logger.info(`[Raccoon] updateWilsonScore: ${itemId} - scoreboard: ${scoreboard}, likedBySet: ${likedBySet}, dislikedBySet: ${dislikedBySet}`)
+  logger.debug(`[Raccoon] updateWilsonScore: ${itemId} - scoreboard: ${scoreboard}, likedBySet: ${likedBySet}, dislikedBySet: ${dislikedBySet}`)
   // used for a confidence interval of 95%
   const z = 1.96
   // initializing variables to calculate wilson score
@@ -276,19 +282,19 @@ export const updateWilsonScore = async function(
   const likedResults = await client.scard(likedBySet)
   const dislikedResults = await client.scard(dislikedBySet)
 
-  logger.info(`[Raccoon] updateWilsonScore: ${itemId} - likedResults: ${likedResults}, dislikedResults: ${dislikedResults}`)
+  logger.debug(`[Raccoon] updateWilsonScore: ${itemId} - likedResults: ${likedResults}, dislikedResults: ${dislikedResults}`)
 
   if (likedResults + dislikedResults > 0) {
     // set n to the sum of the total ratings for the item
     n = likedResults + dislikedResults
 
-    logger.info(`[Raccoon] updateWilsonScore: ${itemId} - n: ${n}`)
+    logger.debug(`[Raccoon] updateWilsonScore: ${itemId} - n: ${n}`)
     // set pOS to the num of liked results divided by the number rated
     // pOS represents the proportion of successes or likes in this case
     // pOS = likedResults / parseFloat(n);
     pOS = likedResults / n
 
-    logger.info(`[Raccoon] updateWilsonScore: ${itemId} - pOS: ${pOS}`)
+    logger.debug(`[Raccoon] updateWilsonScore: ${itemId} - pOS: ${pOS}`)
     // try the following equation
     try {
       // calculating the wilson score
@@ -299,15 +305,15 @@ export const updateWilsonScore = async function(
           z * Math.sqrt((pOS * (1 - pOS) + (z * z) / (4 * n)) / n)) /
         (1 + (z * z) / n)
 
-      logger.info(`[Raccoon] updateWilsonScore: ${itemId} - score: ${score}`)
+      logger.debug(`[Raccoon] updateWilsonScore: ${itemId} - score: ${score}`)
     } catch (e) {
       // if an error occurs, set the score to 0.0 and console log the error message.
-      logger.info(`[Raccoon] updateWilsonScore: ${itemId} - error: ${e.name} : ${e.message}`)
-      logger.info(e.name + ': ' + e.message)
+      logger.debug(`[Raccoon] updateWilsonScore: ${itemId} - error: ${e.name} : ${e.message}`)
+      logger.debug(e.name + ': ' + e.message)
       score = 0.0
     }
     // add that score to the overall scoreboard. if that item already exists, the score will be updated.
-    logger.info(`[Raccoon] updateWilsonScore: ${itemId} - scoreboard: ${scoreboard}, score: ${score}, itemId: ${itemId}`)
+    logger.debug(`[Raccoon] updateWilsonScore: ${itemId} - scoreboard: ${scoreboard}, score: ${score}, itemId: ${itemId}`)
     await client.zadd(scoreboard, score.toString(), itemId)
   }
 }

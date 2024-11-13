@@ -54,7 +54,7 @@ const changeRating = async function(
   itemId: string,
   options: ChangeRatingOptions
 ) {
-  config.logger.info(`[Raccoon] changeRating: ${userId} ${itemId}, liked: ${options.liked}`)
+  config.logger.debug(`[Raccoon] changeRating: ${userId} ${itemId}, liked: ${options.liked}`)
   let updateRecommendations = true
   if (options.updateRecs !== undefined) {
     updateRecommendations = !!options.updateRecs
@@ -89,10 +89,10 @@ const changeRating = async function(
 
   const result2 = await client.sismember(feelingItemSet, userId)
 
-  config.logger.info(`[Raccoon] changeRating: ${userId} ${itemId}, result2: ${result2}`)
+  config.logger.debug(`[Raccoon] changeRating: ${userId} ${itemId}, result2: ${result2}`)
 
   if (updateRecommendations && result2 > 0) {
-    config.logger.info(`[Raccoon] changeRating: ${userId} ${itemId}, updateRecommendations`)
+    config.logger.debug(`[Raccoon] changeRating: ${userId} ${itemId}, updateRecommendations`)
     await updateSequence(client, config, userId, itemId)
   }
 }

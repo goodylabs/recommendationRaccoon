@@ -49,12 +49,12 @@ export default class Raccoon {
   }
 
   liked(userId: string, itemId: string, options: UpdateRecsOptions = {}) {
-    this.config.logger.info(`[Raccoon] liked: ${userId} ${itemId}`)
+    this.config.logger.debug(`[Raccoon] liked: ${userId} ${itemId}`)
     return liked(this.client, this.config, userId, itemId, options)
   }
 
   disliked(userId: string, itemId: string, options: UpdateRecsOptions = {}) {
-    this.config.logger.info(`[Raccoon] disliked: ${userId} ${itemId}`)
+    this.config.logger.debug(`[Raccoon] disliked: ${userId} ${itemId}`)
     return disliked(this.client, this.config, userId, itemId, options)
   }
 
