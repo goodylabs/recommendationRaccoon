@@ -17,22 +17,27 @@ import Config from "./config";
 // then divided by the number of items they both reviewed.
 const jaccardCoefficient = async function(
   client: Redis,
-  className: string,
+  config: Config,
   userId1: string,
   userId2: string
 ) {
   // finalJaccard = 0,
+
+  const { className, logger } = config;
 
   const user1LikedSet = userLikedSetKey(className, userId1)
   const user1DislikedSet = userDislikedSetKey(className, userId1)
   const user2LikedSet = userLikedSetKey(className, userId2)
   const user2DislikedSet = userDislikedSetKey(className, userId2)
 
+  logger.info(`[Raccoon] jaccardCoefficient: ${userId1} - user1LikedSet: ${user1LikedSet}, user1DislikedSet: ${user1DislikedSet}, user2LikedSet: ${user2LikedSet}, user2DislikedSet: ${user2DislikedSet}`)
   // retrieving a set of the users likes incommon
   const results1 = await client.sinter(user1LikedSet, user2LikedSet)
   const results2 = await client.sinter(user1DislikedSet, user2DislikedSet)
   const results3 = await client.sinter(user1LikedSet, user2DislikedSet)
   const results4 = await client.sinter(user1DislikedSet, user2LikedSet)
+
+  logger.info(`[Raccoon] jaccardCoefficient: ${userId1} - results1: ${results1}, results2: ${results2}, results3: ${results3}, results4: ${results4}`)
 
   const similarity =
     results1.length + results2.length - results3.length - results4.length
@@ -40,6 +45,8 @@ const jaccardCoefficient = async function(
   const ratedInCommon =
     results1.length + results2.length + results3.length + results4.length
   // calculating the the modified jaccard score. similarity / num of comparisons made incommon
+
+  logger.info(`[Raccoon] jaccardCoefficient: ${userId1} - similarity: ${similarity}, ratedInCommon: ${ratedInCommon}`)
   const finalJaccardScore: number = similarity / ratedInCommon
   // calling the callback function passed to jaccard with the new score
   return finalJaccardScore
@@ -50,9 +57,11 @@ const jaccardCoefficient = async function(
 // -1 is exact opposite, 1 is exactly the same.
 export const updateSimilarityFor = async function(
   client: Redis,
-  className: string,
+  config: Config,
   userId: string
 ) {
+
+  const { className, logger } = config;
   // turning the userId into a string. depending on the db they might send an object, in which it won't compare properly when comparing
   // to other users
   // userId = String(userId)
@@ -65,6 +74,8 @@ export const updateSimilarityFor = async function(
     userLikedSetKey(className, userId),
     userDislikedSetKey(className, userId)
   )
+
+  logger.info(`[Raccoon] updateSimilarityFor: ${userId} - userRatedItemIds: ${userRatedItemIds}`)
   // if they have rated anything
   if (userRatedItemIds.length > 0) {
     // creating a list of redis keys to look up all of the likes and dislikes for a given set of items
@@ -79,10 +90,14 @@ export const updateSimilarityFor = async function(
       })
       .flat()
   }
+
+  logger.info(`[Raccoon] updateSimilarityFor: ${userId} - itemLikeDislikeKeys: ${itemLikeDislikeKeys}`)
   // flattening the array of all the likes/dislikes for the items a user rated
   // itemLikeDislikeKeys = _.flatten(itemLikeDislikeKeys);
   // builds one set of all the users who liked and disliked the same items
   const otherUserIdsWhoRated = await client.sunion(...itemLikeDislikeKeys)
+
+  logger.info(`[Raccoon] updateSimilarityFor: ${userId} - otherUserIdsWhoRated: ${otherUserIdsWhoRated}`)
 
   await pMap(otherUserIdsWhoRated, async otherUserId => {
     // if there is only one other user or the other user is the same user
@@ -96,10 +111,12 @@ export const updateSimilarityFor = async function(
       // similarity
       const result = await jaccardCoefficient(
         client,
-        className,
+        config,
         userId,
         otherUserId
       )
+
+      logger.info(`[Raccoon] updateSimilarityFor: ${userId} - otherUserId: ${otherUserId}, result: ${result}`)
       await client.zadd(similarityZSet, result.toString(), otherUserId)
     }
   })

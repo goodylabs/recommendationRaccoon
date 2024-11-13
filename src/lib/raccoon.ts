@@ -67,7 +67,7 @@ export default class Raccoon {
   }
 
   updateSimilarityFor(userId: string) {
-    return updateSimilarityFor(this.client, this.config.className, userId)
+    return updateSimilarityFor(this.client, this.config, userId)
   }
 
   predictFor(userId: string, itemId: string) {

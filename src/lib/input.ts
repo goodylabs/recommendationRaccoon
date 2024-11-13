@@ -25,7 +25,7 @@ const updateSequence = async function(
   //   updateWilson = options.updateWilson ? true : false;
   // }
 
-  await updateSimilarityFor(client, config.className, userId)
+  await updateSimilarityFor(client, config, userId)
   return Promise.all([
     updateWilsonScore(client, config, itemId),
     updateRecommendationsFor(
