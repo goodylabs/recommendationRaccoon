@@ -101,6 +101,12 @@ export const updateSimilarityFor = async function(
   // flattening the array of all the likes/dislikes for the items a user rated
   // itemLikeDislikeKeys = _.flatten(itemLikeDislikeKeys);
   // builds one set of all the users who liked and disliked the same items
+
+  if (itemLikeDislikeKeys.length === 0) {
+    logger.info(`[Raccoon] updateSimilarityFor: ${userId} - itemLikeDislikeKeys is empty`)
+    return;
+  }
+
   const otherUserIdsWhoRated = await client.sunion(...itemLikeDislikeKeys)
 
   logger.debug(`[Raccoon] updateSimilarityFor: ${userId} - otherUserIdsWhoRated: ${otherUserIdsWhoRated}`)
