@@ -1,17 +1,14 @@
 # recommendationRaccoon (raccoon)
 
-[![codecov](https://codecov.io/gh/goodylabs/recommendationRaccoon/branch/master/graph/badge.svg)](https://codecov.io/gh/goodylabs/recommendationRaccoon)
-[![Actions Status](https://github.com/goodylabs/recommendationRaccoon/workflows/test/badge.svg)](https://github.com/goodylabs/recommendationRaccoon/actions)
-
 An easy-to-use collaborative filtering based recommendation engine and NPM module built on top of Node.js and Redis. The engine uses the Jaccard coefficient to determine the similarity between users and k-nearest-neighbors to create recommendations. This module is useful for anyone with users, a store of products/movies/items, and the desire to give their users the ability to like/dislike and receive recommendations based on similar users. Raccoon takes care of all the recommendation and rating logic. It can be paired with any database as it does not keep track of any user/item information besides a unique ID.
 
-Updated for ES6.
+## Fork history
 
-**Forked [guymorita/recommendationRaccoon](https://github.com/guymorita/recommendationRaccoon)**
+This package descends from [guymorita/recommendationRaccoon](https://github.com/guymorita/recommendationRaccoon), rewritten in TypeScript and maintained for a while as [maruware/recommendationRaccoon](https://github.com/maruware/recommendationRaccoon) (published as `@maruware/raccoon`). It is now maintained by [goodylabs](https://github.com/goodylabs) as `@goodylabs/raccoon`.
 
 ## Requirements
 
-- Node.js 11.x
+- Node.js >=22
 - Redis
 
 ## Install
@@ -190,10 +187,6 @@ If you've ever been to Amazon or another site with tons of reviews, you've proba
 
 When combined with hiredis, redis can get/set at ~40,000 operations/second using 50 concurrent connections without pipelining. In short, Redis is extremely fast at set math and is a natural fit for a recommendation engine of this scale. Redis is integral to many top companies such as Twitter which uses it for their Timeline (substituted Memcached).
 
-## Features to Contribute
-
-- Help optimize for the Movielens 100k data set. Here: https://github.com/guymorita/benchmark_raccoon_movielens
-
 ## Run tests
 
 ```bash
@@ -202,13 +195,13 @@ yarn test
 
 ## Tech Stack
 
-recommendationRaccoon is written fully in Javascript. It utilizes the asyncronous, non-blocking features of Node.js for the core of app. The recommendations and ratings are stored in an intermediate data store called Redis which performs extremely well compared to database systems that write every change to disk before committing the transaction. Redis holds the entire dataset in memory. For the actual handling of the parallel asyncronous functions, raccoon uses the async library for Node.js.
+recommendationRaccoon is written in TypeScript on top of Node.js. The recommendations and ratings are stored in Redis, which performs extremely well compared to database systems that write every change to disk before committing the transaction. Redis holds the entire dataset in memory.
 
-For testing, raccoon uses Mocha Chai as a testing suite, automates it with Grunt.js and gets test coverage with Blanket.js/Travis-CI/Coveralls.
+Testing is done with Jest; linting and formatting with ESLint and Prettier.
 
 ## Links
 
-- Code: 'git clone git://github.com/guymorita/recommendationRaccoon.git'
-- NPM Module(Original): 'https://npmjs.org/package/raccoon'
-- Benchmark / Performance repo: 'https://github.com/guymorita/benchmark_raccoon_movielens'
-- Demo / UI App repo: 'https://github.com/guymorita/Mosaic-Films---Recommendation-Engine-Demo'
+- Code: `git clone https://github.com/goodylabs/recommendationRaccoon.git`
+- Original project: [guymorita/recommendationRaccoon](https://github.com/guymorita/recommendationRaccoon)
+- Benchmark / Performance repo: [guymorita/benchmark_raccoon_movielens](https://github.com/guymorita/benchmark_raccoon_movielens)
+- Demo / UI App repo: [guymorita/Mosaic-Films---Recommendation-Engine-Demo](https://github.com/guymorita/Mosaic-Films---Recommendation-Engine-Demo)
