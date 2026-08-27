@@ -1,0 +1,15 @@
+pre-commit:
+  parallel: true
+  commands:
+    leaks-staged:
+      run: mise run leaks-staged
+    code-check:
+      run: mise run code-check
+
+pre-push:
+  parallel: true
+  commands:
+    trivy:
+      run: mise run audit
+    # Tests are not hooked here on purpose: they need a live Redis on
+    # localhost:6379. CI gates them instead (see .github/workflows/test.yml).

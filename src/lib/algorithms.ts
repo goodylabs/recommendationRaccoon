@@ -1,323 +1,282 @@
-import pMap from 'p-map'
+import { Redis } from 'ioredis';
+import pMap from 'p-map';
+
+import Config from './config';
 import {
-  userLikedSetKey,
-  userDislikedSetKey,
-  similarityZSetKey,
-  itemLikedBySetKey,
   itemDislikedBySetKey,
-  tempAllLikedSetKey,
+  itemLikedBySetKey,
   recommendedZSetKey,
-  scoreboardZSetKey
-} from './key'
-import { Redis } from 'ioredis'
-import Config from "./config";
+  scoreboardZSetKey,
+  similarityZSetKey,
+  tempAllLikedSetKey,
+  userDislikedSetKey,
+  userLikedSetKey,
+} from './key';
 
 // the jaccard coefficient outputs an objective measurement of the similarity between two objects. in this case, two users. the coefficient
 // is the result of summing the two users likes/dislikes incommon then summing they're likes/dislikes that they disagree on. this sum is
 // then divided by the number of items they both reviewed.
-const jaccardCoefficient = async function(
-  client: Redis,
-  config: Config,
-  userId1: string,
-  userId2: string
-) {
+const jaccardCoefficient = async function (client: Redis, config: Config, userId1: string, userId2: string) {
   // finalJaccard = 0,
 
   const { className, logger } = config;
 
-  const user1LikedSet = userLikedSetKey(className, userId1)
-  const user1DislikedSet = userDislikedSetKey(className, userId1)
-  const user2LikedSet = userLikedSetKey(className, userId2)
-  const user2DislikedSet = userDislikedSetKey(className, userId2)
+  const user1LikedSet = userLikedSetKey(className, userId1);
+  const user1DislikedSet = userDislikedSetKey(className, userId1);
+  const user2LikedSet = userLikedSetKey(className, userId2);
+  const user2DislikedSet = userDislikedSetKey(className, userId2);
 
-  logger.debug(`[Raccoon] jaccardCoefficient: ${userId1} - user1LikedSet: ${user1LikedSet}, user1DislikedSet: ${user1DislikedSet}, user2LikedSet: ${user2LikedSet}, user2DislikedSet: ${user2DislikedSet}`)
+  logger.debug(
+    `jaccardCoefficient: ${userId1} - user1LikedSet: ${user1LikedSet}, user1DislikedSet: ${user1DislikedSet}, user2LikedSet: ${user2LikedSet}, user2DislikedSet: ${user2DislikedSet}`,
+  );
   // retrieving a set of the users likes incommon
-  const results1 = await client.sinter(user1LikedSet, user2LikedSet)
-  const results2 = await client.sinter(user1DislikedSet, user2DislikedSet)
-  const results3 = await client.sinter(user1LikedSet, user2DislikedSet)
-  const results4 = await client.sinter(user1DislikedSet, user2LikedSet)
+  const results1 = await client.sinter(user1LikedSet, user2LikedSet);
+  const results2 = await client.sinter(user1DislikedSet, user2DislikedSet);
+  const results3 = await client.sinter(user1LikedSet, user2DislikedSet);
+  const results4 = await client.sinter(user1DislikedSet, user2LikedSet);
 
-  logger.debug(`[Raccoon] jaccardCoefficient: ${userId1} - results1: ${results1}, results2: ${results2}, results3: ${results3}, results4: ${results4}`)
+  logger.debug(
+    `jaccardCoefficient: ${userId1} - results1: ${results1.join(',')}, results2: ${results2.join(',')}, results3: ${results3.join(',')}, results4: ${results4.join(',')}`,
+  );
 
-  const similarity =
-    results1.length + results2.length - results3.length - results4.length
+  const similarity = results1.length + results2.length - results3.length - results4.length;
   // calculating the number of movies rated incommon
-  const ratedInCommon =
-    results1.length + results2.length + results3.length + results4.length
+  const ratedInCommon = results1.length + results2.length + results3.length + results4.length;
   // calculating the the modified jaccard score. similarity / num of comparisons made incommon
 
-  logger.debug(`[Raccoon] jaccardCoefficient: ${userId1} - similarity: ${similarity}, ratedInCommon: ${ratedInCommon}`)
-  
-  if(ratedInCommon === 0) {
-    logger.info(`[Raccoon] jaccardCoefficient: user1: ${userId1}, user2: ${userId2} - ratedInCommon is 0`)
+  logger.debug(`jaccardCoefficient: ${userId1} - similarity: ${similarity}, ratedInCommon: ${ratedInCommon}`);
+
+  if (ratedInCommon === 0) {
+    logger.info(`jaccardCoefficient: user1: ${userId1}, user2: ${userId2} - ratedInCommon is 0`);
     return 0;
   }
-  
-  const finalJaccardScore: number = similarity / ratedInCommon
+
+  const finalJaccardScore: number = similarity / ratedInCommon;
   // calling the callback function passed to jaccard with the new score
-  return finalJaccardScore
-}
+  return finalJaccardScore;
+};
 
 // this function updates the similarity for one user versus all others. at scale this probably needs to be refactored to compare a user
 // against clusters of users instead of against all. every comparison will be a value between -1 and 1 representing simliarity.
 // -1 is exact opposite, 1 is exactly the same.
-export const updateSimilarityFor = async function(
-  client: Redis,
-  config: Config,
-  userId: string
-) {
-
+export const updateSimilarityFor = async function (client: Redis, config: Config, userId: string) {
   const { className, logger } = config;
   // turning the userId into a string. depending on the db they might send an object, in which it won't compare properly when comparing
   // to other users
   // userId = String(userId)
   // initializing variables
-  let itemLikeDislikeKeys: string[] = []
+  let itemLikeDislikeKeys: string[] = [];
   // setting the redis key for the user's similarity set
-  const similarityZSet = similarityZSetKey(className, userId)
+  const similarityZSet = similarityZSetKey(className, userId);
   // creating a combined set with the all of a users likes and dislikes
   const userRatedItemIds = await client.sunion(
     userLikedSetKey(className, userId),
-    userDislikedSetKey(className, userId)
-  )
+    userDislikedSetKey(className, userId),
+  );
 
-  logger.debug(`[Raccoon] updateSimilarityFor: ${userId} - userRatedItemIds: ${userRatedItemIds}`)
+  logger.debug(`updateSimilarityFor: ${userId} - userRatedItemIds: ${userRatedItemIds.join(',')}`);
   // if they have rated anything
   if (userRatedItemIds.length > 0) {
     // creating a list of redis keys to look up all of the likes and dislikes for a given set of items
     itemLikeDislikeKeys = userRatedItemIds
-      .map(function(itemId) {
+      .map(function (itemId) {
         // key for that item being liked
-        const itemLiked = itemLikedBySetKey(className, itemId)
+        const itemLiked = itemLikedBySetKey(className, itemId);
         // key for the item being disliked
-        const itemDisliked = itemDislikedBySetKey(className, itemId)
+        const itemDisliked = itemDislikedBySetKey(className, itemId);
         // returning an array of those keys
-        return [itemLiked, itemDisliked]
+        return [itemLiked, itemDisliked];
       })
-      .flat()
+      .flat();
   }
 
-  logger.debug(`[Raccoon] updateSimilarityFor: ${userId} - itemLikeDislikeKeys: ${itemLikeDislikeKeys}`)
+  logger.debug(`updateSimilarityFor: ${userId} - itemLikeDislikeKeys: ${itemLikeDislikeKeys.join(',')}`);
   // flattening the array of all the likes/dislikes for the items a user rated
   // itemLikeDislikeKeys = _.flatten(itemLikeDislikeKeys);
   // builds one set of all the users who liked and disliked the same items
 
   if (itemLikeDislikeKeys.length === 0) {
-    logger.info(`[Raccoon] updateSimilarityFor: ${userId} - itemLikeDislikeKeys is empty`)
+    logger.info(`updateSimilarityFor: ${userId} - itemLikeDislikeKeys is empty`);
     return;
   }
 
-  const otherUserIdsWhoRated = await client.sunion(...itemLikeDislikeKeys)
+  const otherUserIdsWhoRated = await client.sunion(...itemLikeDislikeKeys);
 
-  logger.debug(`[Raccoon] updateSimilarityFor: ${userId} - otherUserIdsWhoRated: ${otherUserIdsWhoRated}`)
+  logger.debug(`updateSimilarityFor: ${userId} - otherUserIdsWhoRated: ${otherUserIdsWhoRated.join(',')}`);
 
-  await pMap(otherUserIdsWhoRated, async otherUserId => {
+  await pMap(otherUserIdsWhoRated, async (otherUserId) => {
     // if there is only one other user or the other user is the same user
     if (otherUserIdsWhoRated.length === 1 || userId === otherUserId) {
       // then call the callback and exciting the similarity check
-      return
+      return;
     }
     // if the userid is not the same as the user
     if (userId !== otherUserId) {
       // calculate the jaccard coefficient for similarity. it will return a value between -1 and 1 showing the two users
       // similarity
-      const result = await jaccardCoefficient(
-        client,
-        config,
-        userId,
-        otherUserId
-      )
+      const result = await jaccardCoefficient(client, config, userId, otherUserId);
 
-      logger.debug(`[Raccoon] updateSimilarityFor: ${userId} - otherUserId: ${otherUserId}, result: ${result}`)
-      await client.zadd(similarityZSet, result.toString(), otherUserId)
+      logger.debug(`updateSimilarityFor: ${userId} - otherUserId: ${otherUserId}, result: ${result}`);
+      await client.zadd(similarityZSet, result.toString(), otherUserId);
     }
-  })
-}
+  });
+};
 
-export const predictFor = async function(
-  client: Redis,
-  className: string,
-  userId: string,
-  itemId: string
-) {
+export const predictFor = async function (client: Redis, className: string, userId: string, itemId: string) {
   // userId = String(userId);
   // itemId = String(itemId);
-  let finalSimilaritySum = 0.0
-  const similarityZSet = similarityZSetKey(className, userId)
-  const likedBySet = itemLikedBySetKey(className, itemId)
-  const dislikedBySet = itemDislikedBySetKey(className, itemId)
+  let finalSimilaritySum = 0.0;
+  const similarityZSet = similarityZSetKey(className, userId);
+  const likedBySet = itemLikedBySetKey(className, itemId);
+  const dislikedBySet = itemDislikedBySetKey(className, itemId);
 
-  const result1 = await similaritySum(client, similarityZSet, likedBySet)
-  const result2 = await similaritySum(client, similarityZSet, dislikedBySet)
-  finalSimilaritySum = result1 - result2
-  const likedByCount = await client.scard(likedBySet)
-  const dislikedByCount = await client.scard(dislikedBySet)
+  const result1 = await similaritySum(client, similarityZSet, likedBySet);
+  const result2 = await similaritySum(client, similarityZSet, dislikedBySet);
+  finalSimilaritySum = result1 - result2;
+  const likedByCount = await client.scard(likedBySet);
+  const dislikedByCount = await client.scard(dislikedBySet);
 
-  const prediction = finalSimilaritySum / (likedByCount + dislikedByCount)
+  const prediction = finalSimilaritySum / (likedByCount + dislikedByCount);
   if (isFinite(prediction)) {
-    return prediction
+    return prediction;
   } else {
-    return 0.0
+    return 0.0;
   }
-}
+};
 
-export const similaritySum = async function(
-  client: Redis,
-  simSet: string,
-  compSet: string
-) {
-  let similarSum = 0.0
-  const userIds = await client.smembers(compSet)
+export const similaritySum = async function (client: Redis, simSet: string, compSet: string) {
+  let similarSum = 0.0;
+  const userIds = await client.smembers(compSet);
   await pMap(
     userIds,
-    async userId => {
-      const zScore = await client.zscore(simSet, userId)
-      const newScore = parseFloat(zScore) || 0.0
-      similarSum += newScore
+    async (userId) => {
+      const zScore = await client.zscore(simSet, userId);
+      const newScore = parseFloat(zScore) || 0.0;
+      similarSum += newScore;
     },
-    { concurrency: 1 }
-  )
+    { concurrency: 1 },
+  );
 
-  return similarSum
-}
+  return similarSum;
+};
 
 // after the similarity is updated for the user, the users recommendations are updated
 // recommendations consist of a sorted set in Redis. the values of this set are
 // names of the items and the score is what raccoon estimates that user would rate it
 // the values are generally not going to be -1 or 1 exactly because there isn't 100%
 // certainty.
-export const updateRecommendationsFor = async function(
+export const updateRecommendationsFor = async function (
   client: Redis,
   className: string,
   nearestNeighbors: number,
   numOfRecsStore: number,
-  userId: string
+  userId: string,
 ) {
   // turning the user input into a string so it can be compared properly
   // userId = String(userId);
   // creating two blank arrays
-  const setsToUnion: string[] = []
-  const scoreMap: [number, string][] = []
+  const setsToUnion: string[] = [];
+  const scoreMap: [number, string][] = [];
   // initializing the redis keys for temp sets, the similarity set and the recommended set
-  const tempAllLikedSet = tempAllLikedSetKey(className, userId)
-  const similarityZSet = similarityZSetKey(className, userId)
-  const recommendedZSet = recommendedZSetKey(className, userId)
+  const tempAllLikedSet = tempAllLikedSetKey(className, userId);
+  const similarityZSet = similarityZSetKey(className, userId);
+  const recommendedZSet = recommendedZSetKey(className, userId);
 
-  const mostSimilarUserIds = await client.zrevrange(
-    similarityZSet,
-    0,
-    nearestNeighbors - 1
-  )
-  const leastSimilarUserIds = await client.zrange(
-    similarityZSet,
-    0,
-    nearestNeighbors - 1
-  )
+  const mostSimilarUserIds = await client.zrevrange(similarityZSet, 0, nearestNeighbors - 1);
+  const leastSimilarUserIds = await client.zrange(similarityZSet, 0, nearestNeighbors - 1);
   // iterate through the user ids to create the redis keys for all those users likes
-  mostSimilarUserIds.forEach(function(usrId) {
-    setsToUnion.push(userLikedSetKey(className, usrId))
-  })
+  mostSimilarUserIds.forEach(function (usrId) {
+    setsToUnion.push(userLikedSetKey(className, usrId));
+  });
   // if you want to factor in the least similar least likes, you change this in config
   // left it off because it was recommending items that every disliked universally
-  leastSimilarUserIds.forEach(function(usrId) {
-    setsToUnion.push(userDislikedSetKey(className, usrId))
-  })
+  leastSimilarUserIds.forEach(function (usrId) {
+    setsToUnion.push(userDislikedSetKey(className, usrId));
+  });
   // if there is at least one set in the array, continue
   if (setsToUnion.length > 0) {
-    await client.sunionstore(tempAllLikedSet, ...setsToUnion)
+    await client.sunionstore(tempAllLikedSet, ...setsToUnion);
     const notYetRatedItems = await client.sdiff(
       tempAllLikedSet,
       userLikedSetKey(className, userId),
-      userDislikedSetKey(className, userId)
-    )
+      userDislikedSetKey(className, userId),
+    );
 
     await pMap(
       notYetRatedItems,
-      async function(itemId) {
-        const score = await predictFor(client, className, userId, itemId)
-        scoreMap.push([score, itemId])
+      async function (itemId) {
+        const score = await predictFor(client, className, userId, itemId);
+        scoreMap.push([score, itemId]);
       },
-      { concurrency: 1 }
-    )
+      { concurrency: 1 },
+    );
 
-    await client.del(recommendedZSet)
+    await client.del(recommendedZSet);
 
     await pMap(
       scoreMap,
-      async function(scorePair) {
-        await client.zadd(
-          recommendedZSet,
-          scorePair[0].toString(),
-          scorePair[1]
-        )
+      async function (scorePair) {
+        await client.zadd(recommendedZSet, scorePair[0].toString(), scorePair[1]);
       },
-      { concurrency: 1 }
-    )
+      { concurrency: 1 },
+    );
 
-    await client.del(tempAllLikedSet)
-    const length = await client.zcard(recommendedZSet)
-    await client.zremrangebyrank(
-      recommendedZSet,
-      0,
-      length - numOfRecsStore - 1
-    )
+    await client.del(tempAllLikedSet);
+    const length = await client.zcard(recommendedZSet);
+    await client.zremrangebyrank(recommendedZSet, 0, length - numOfRecsStore - 1);
   }
-}
+};
 
 // the wilson score is a proxy for 'best rated'. it represents the best finding the best ratio of likes and also eliminating
 // outliers. the wilson score is a value between 0 and 1.
-export const updateWilsonScore = async function(
-  client: Redis,
-  config: Config,
-  itemId: string
-) {
-  const { className, logger } = config
+export const updateWilsonScore = async function (client: Redis, config: Config, itemId: string) {
+  const { className, logger } = config;
   // creating the redis keys for scoreboard and to get the items liked and disliked sets
-  const scoreboard = scoreboardZSetKey(className)
-  const likedBySet = itemLikedBySetKey(className, itemId)
-  const dislikedBySet = itemDislikedBySetKey(className, itemId)
+  const scoreboard = scoreboardZSetKey(className);
+  const likedBySet = itemLikedBySetKey(className, itemId);
+  const dislikedBySet = itemDislikedBySetKey(className, itemId);
 
-  logger.debug(`[Raccoon] updateWilsonScore: ${itemId} - scoreboard: ${scoreboard}, likedBySet: ${likedBySet}, dislikedBySet: ${dislikedBySet}`)
+  logger.debug(
+    `updateWilsonScore: ${itemId} - scoreboard: ${scoreboard}, likedBySet: ${likedBySet}, dislikedBySet: ${dislikedBySet}`,
+  );
   // used for a confidence interval of 95%
-  const z = 1.96
+  const z = 1.96;
   // initializing variables to calculate wilson score
-  let n, pOS, score
+  let n, pOS, score;
 
-  const likedResults = await client.scard(likedBySet)
-  const dislikedResults = await client.scard(dislikedBySet)
+  const likedResults = await client.scard(likedBySet);
+  const dislikedResults = await client.scard(dislikedBySet);
 
-  logger.debug(`[Raccoon] updateWilsonScore: ${itemId} - likedResults: ${likedResults}, dislikedResults: ${dislikedResults}`)
+  logger.debug(`updateWilsonScore: ${itemId} - likedResults: ${likedResults}, dislikedResults: ${dislikedResults}`);
 
   if (likedResults + dislikedResults > 0) {
     // set n to the sum of the total ratings for the item
-    n = likedResults + dislikedResults
+    n = likedResults + dislikedResults;
 
-    logger.debug(`[Raccoon] updateWilsonScore: ${itemId} - n: ${n}`)
+    logger.debug(`updateWilsonScore: ${itemId} - n: ${n}`);
     // set pOS to the num of liked results divided by the number rated
     // pOS represents the proportion of successes or likes in this case
     // pOS = likedResults / parseFloat(n);
-    pOS = likedResults / n
+    pOS = likedResults / n;
 
-    logger.debug(`[Raccoon] updateWilsonScore: ${itemId} - pOS: ${pOS}`)
+    logger.debug(`updateWilsonScore: ${itemId} - pOS: ${pOS}`);
     // try the following equation
     try {
       // calculating the wilson score
       // http://www.evanmiller.org/how-not-to-sort-by-average-rating.html
-      score =
-        (pOS +
-          (z * z) / (2 * n) -
-          z * Math.sqrt((pOS * (1 - pOS) + (z * z) / (4 * n)) / n)) /
-        (1 + (z * z) / n)
+      score = (pOS + (z * z) / (2 * n) - z * Math.sqrt((pOS * (1 - pOS) + (z * z) / (4 * n)) / n)) / (1 + (z * z) / n);
 
-      logger.debug(`[Raccoon] updateWilsonScore: ${itemId} - score: ${score}`)
+      logger.debug(`updateWilsonScore: ${itemId} - score: ${score}`);
     } catch (e) {
-      // if an error occurs, set the score to 0.0 and console log the error message.
-      logger.debug(`[Raccoon] updateWilsonScore: ${itemId} - error: ${e.name} : ${e.message}`)
-      logger.debug(e.name + ': ' + e.message)
-      score = 0.0
+      // if an error occurs, set the score to 0.0 and log the error message.
+      const error = e instanceof Error ? e : new Error(String(e));
+
+      logger.debug(`updateWilsonScore: ${itemId} - error: ${error.name} : ${error.message}`);
+      logger.debug(`${error.name}: ${error.message}`);
+      score = 0.0;
     }
     // add that score to the overall scoreboard. if that item already exists, the score will be updated.
-    logger.debug(`[Raccoon] updateWilsonScore: ${itemId} - scoreboard: ${scoreboard}, score: ${score}, itemId: ${itemId}`)
-    await client.zadd(scoreboard, score.toString(), itemId)
+    logger.debug(`updateWilsonScore: ${itemId} - scoreboard: ${scoreboard}, score: ${score}, itemId: ${itemId}`);
+    await client.zadd(scoreboard, score.toString(), itemId);
   }
-}
+};

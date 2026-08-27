@@ -4,6 +4,8 @@ node_modules
 dumb.rdb
 npm-debug.log
 .idea
-
 dist
 coverage
+build
+*.log
+.yarn

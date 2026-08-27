@@ -11,8 +11,8 @@ Updated for ES6.
 
 ## Requirements
 
-* Node.js 11.x
-* Redis
+- Node.js 11.x
+- Redis
 
 ## Install
 
@@ -25,76 +25,71 @@ npm install @goodylabs/raccoon
 Raccoon keeps track of the ratings and recommendations from your users. It does not need to store any meta data of the user or product aside from an id. To get started:
 
 ```ts
-import Raccoon from '@goodylabs/raccoon'
+import Raccoon from '@goodylabs/raccoon';
 
 async () => {
   const raccoon = new Raccoon({
     className: 'movie',
-    redisUrl: 'YOUR_REDIS_URL'
-  })
-  await raccoon.liked('garyId', 'movieId')
-  await raccoon.liked('garyId', 'movie2Id')
-  await raccoon.liked('chrisId', 'movieId')
-  const recs = await raccoon.recommendFor('chrisId', 10)
-  console.log('recs', recs)
+    redisUrl: 'YOUR_REDIS_URL',
+  });
+  await raccoon.liked('garyId', 'movieId');
+  await raccoon.liked('garyId', 'movie2Id');
+  await raccoon.liked('chrisId', 'movieId');
+  const recs = await raccoon.recommendFor('chrisId', 10);
+  console.log('recs', recs);
   // results will be an array of x ranked recommendations for chris
   // in this case it would contain movie2
-}
-
+};
 ```
 
 ## Full Usage
 
 ### Likes:
-``` js
-raccoon.liked('userId', 'itemId').then(() => {
-});
+
+```js
+raccoon.liked('userId', 'itemId').then(() => {});
 // after a user likes an item, the rating data is immediately
 // stored in Redis in various sets for the user/item, then the similarity,
 // wilson score and recommendations are updated for that user.
 ```
 
-``` js
-raccoon.liked('userId', 'itemId', options).then(() => {
-});
+```js
+raccoon.liked('userId', 'itemId', options).then(() => {});
 // available options are:
 {
-  updateRecs: false
-    // this will stop the update sequence for this rating
-    // and greatly speed up the time to input all the data
-    // however, there will not be any recommendations at the end.
-    // if you fire a like/dislike with updateRecs on it will only update
-    // recommendations for that user.
-    // default === true
+  updateRecs: false;
+  // this will stop the update sequence for this rating
+  // and greatly speed up the time to input all the data
+  // however, there will not be any recommendations at the end.
+  // if you fire a like/dislike with updateRecs on it will only update
+  // recommendations for that user.
+  // default === true
 }
 
 // options are available to liked, disliked, unliked, and undisliked.
-
 ```
 
-``` js
-raccoon.unliked('userId', 'itemId').then(() => {
-});
+```js
+raccoon.unliked('userId', 'itemId').then(() => {});
 // removes the liked rating from all sets and updates. not the same as disliked.
 ```
 
 ### Dislikes:
-``` js
-raccoon.disliked('userId', 'itemId').then(() => {
-});
+
+```js
+raccoon.disliked('userId', 'itemId').then(() => {});
 // negative rating of the item. if user1 liked movie1 and user2 disliked it, their
 // jaccard would be -1 meaning the have opposite preferences.
 ```
 
-``` js
-raccoon.undisliked('userId', 'itemId').then(() => {
-});
+```js
+raccoon.undisliked('userId', 'itemId').then(() => {});
 // similar to unliked. removes the negative disliked rating as if it was never rated.
 ```
 
 ### Recommendations
 
-``` js
+```js
 raccoon.recommendFor('userId', 'numberOfRecs').then((results) => {
   // returns an ranked sorted array of itemIds which represent the top recommendations
   // for that individual user based on knn.
@@ -122,7 +117,8 @@ raccoon.leastSimilarUsers('userId').then((results) => {
 ### User Statistics
 
 ### Ratings:
-``` js
+
+```js
 raccoon.bestRated().then((results) => {
   // returns an array of the 'scoreboard' sorted set which represents the global
   // ranking of items based on the Wilson Score Interval. in short it represents the
@@ -136,7 +132,8 @@ raccoon.worstRated().then((results) => {
 ```
 
 ### Liked/Disliked lists and counts:
-``` js
+
+```js
 raccoon.mostLiked().then((results) => {
   // returns an array of the 'mostLiked' sorted set which represents the global
   // number of likes for all the items. does not factor in dislikes.
@@ -175,7 +172,6 @@ raccoon.allWatchedFor('userId').then((results) => {
 });
 ```
 
-
 ## Recommendation Engine Components
 
 ### Jaccard Coefficient for Similarity
@@ -194,15 +190,13 @@ If you've ever been to Amazon or another site with tons of reviews, you've proba
 
 When combined with hiredis, redis can get/set at ~40,000 operations/second using 50 concurrent connections without pipelining. In short, Redis is extremely fast at set math and is a natural fit for a recommendation engine of this scale. Redis is integral to many top companies such as Twitter which uses it for their Timeline (substituted Memcached).
 
-
-
 ## Features to Contribute
 
-* Help optimize for the Movielens 100k data set. Here: https://github.com/guymorita/benchmark_raccoon_movielens
+- Help optimize for the Movielens 100k data set. Here: https://github.com/guymorita/benchmark_raccoon_movielens
 
 ## Run tests
 
-``` bash
+```bash
 yarn test
 ```
 
@@ -214,7 +208,7 @@ For testing, raccoon uses Mocha Chai as a testing suite, automates it with Grunt
 
 ## Links
 
-* Code: 'git clone git://github.com/guymorita/recommendationRaccoon.git'
-* NPM Module(Original): 'https://npmjs.org/package/raccoon'
-* Benchmark / Performance repo: 'https://github.com/guymorita/benchmark_raccoon_movielens'
-* Demo / UI App repo: 'https://github.com/guymorita/Mosaic-Films---Recommendation-Engine-Demo'
+- Code: 'git clone git://github.com/guymorita/recommendationRaccoon.git'
+- NPM Module(Original): 'https://npmjs.org/package/raccoon'
+- Benchmark / Performance repo: 'https://github.com/guymorita/benchmark_raccoon_movielens'
+- Demo / UI App repo: 'https://github.com/guymorita/Mosaic-Films---Recommendation-Engine-Demo'

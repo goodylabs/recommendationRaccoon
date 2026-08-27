@@ -1,46 +1,46 @@
-const USER = 'user'
-const ITEM = 'item'
+const USER = 'user';
+const ITEM = 'item';
 
 function joinKey(className: string, keyArr: string[]) {
-  return [className].concat(keyArr).join(':')
+  return [className].concat(keyArr).join(':');
 }
 
 export function userLikedSetKey(className: string, userId: string) {
-  return joinKey(className, [USER, userId, 'liked'])
+  return joinKey(className, [USER, userId, 'liked']);
 }
 
 export function userDislikedSetKey(className: string, userId: string) {
-  return joinKey(className, [USER, userId, 'disliked'])
+  return joinKey(className, [USER, userId, 'disliked']);
 }
 
 export function itemLikedBySetKey(className: string, itemId: string) {
-  return joinKey(className, [ITEM, itemId, 'liked'])
+  return joinKey(className, [ITEM, itemId, 'liked']);
 }
 
 export function itemDislikedBySetKey(className: string, itemId: string) {
-  return joinKey(className, [ITEM, itemId, 'disliked'])
+  return joinKey(className, [ITEM, itemId, 'disliked']);
 }
 
 export function mostLikedKey(className: string) {
-  return joinKey(className, ['mostLiked'])
+  return joinKey(className, ['mostLiked']);
 }
 
 export function mostDislikedKey(className: string) {
-  return joinKey(className, ['mostDisliked'])
+  return joinKey(className, ['mostDisliked']);
 }
 
 export function recommendedZSetKey(className: string, userId: string) {
-  return joinKey(className, [USER, userId, 'recommendedZSet'])
+  return joinKey(className, [USER, userId, 'recommendedZSet']);
 }
 
 export function scoreboardZSetKey(className: string) {
-  return joinKey(className, ['scoreboard'])
+  return joinKey(className, ['scoreboard']);
 }
 
 export function similarityZSetKey(className: string, userId: string) {
-  return joinKey(className, [USER, userId, 'similarityZSet'])
+  return joinKey(className, [USER, userId, 'similarityZSet']);
 }
 
 export function tempAllLikedSetKey(className: string, userId: string) {
-  return joinKey(className, [USER, userId, 'tempAllLikedSet'])
+  return joinKey(className, [USER, userId, 'tempAllLikedSet']);
 }

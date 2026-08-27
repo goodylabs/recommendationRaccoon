@@ -1,0 +1,67 @@
+[tools]
+node = "22"
+lefthook = "latest"
+trivy = "latest"
+gitleaks = "latest"
+
+[settings]
+node.corepack = true
+
+[tasks.install]
+description = "Install dependencies"
+alias = "i"
+run = "yarn install"
+
+[tasks.ci-install]
+description = "Install dependencies for CI"
+run = "yarn install --immutable"
+
+[tasks.redis]
+description = "Start a throwaway Redis on 6379 for the test suite"
+run = "docker run -d --rm --name raccoon-test-redis -p 6379:6379 redis"
+
+[tasks.lint]
+description = "Run ESLint"
+run = "yarn lint"
+
+[tasks.lint-fix]
+description = "Run ESLint with auto-fix"
+run = "yarn lint:fix"
+
+[tasks.format]
+description = "Run Prettier"
+run = "yarn format"
+
+[tasks.format-check]
+description = "Check formatting without changes"
+run = "yarn format:check"
+
+[tasks.typecheck]
+description = "Run TypeScript type checking"
+run = "yarn typecheck"
+
+[tasks.test]
+description = "Run tests (needs Redis — see the `redis` task)"
+run = "yarn test"
+
+[tasks.audit]
+description = "Check for CVE vulnerabilities (CRITICAL + HIGH)"
+run = "trivy fs --severity CRITICAL,HIGH --scanners vuln --exit-code 1 ."
+
+[tasks.leaks]
+description = "Check for secrets in the codebase"
+run = "gitleaks detect --source . --exit-code 1"
+
+[tasks.leaks-staged]
+description = "Check staged files for secrets"
+run = "gitleaks protect --staged --redact --verbose"
+
+[tasks.code-check]
+description = "Run all quality checks (lint + format + types)"
+depends = ["lint", "format-check", "typecheck"]
+run = []
+
+[tasks.setup]
+description = "Install dependencies and git hooks"
+depends = ["install"]
+run = "lefthook install"

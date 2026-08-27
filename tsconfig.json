@@ -1,27 +1,22 @@
 {
-    "compilerOptions": {
-        "module": "commonjs",
-        "lib": ["es2019"],
-        "target": "es2017",
-        "esModuleInterop": true,
-        "noImplicitReturns": true,
-        "noImplicitThis": true,
-        "noImplicitAny": true,
-        "importHelpers": true,
-        "strictNullChecks": true,
-        "suppressImplicitAnyIndexErrors": true,
-        "noUnusedLocals": true,
-        "outDir": "./dist",
-        "sourceMap": true,
-        "declaration": true,
-        /* Should be removed - caused by winston */
-        "skipLibCheck": true,
-    },
-    "include": [
-        "src/**/*"
-    ],
-    "exclude": [
-        "node_modules",
-        "dist"
-    ]
-  }
+  "compilerOptions": {
+    "module": "commonjs",
+    "target": "ES2022",
+    "strict": true,
+    "removeComments": false,
+    "preserveConstEnums": true,
+    "noUnusedLocals": true,
+    "noImplicitOverride": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "declaration": true,
+    "sourceMap": true,
+    "types": ["node", "jest"]
+  },
+  "include": ["src", "test"],
+  "exclude": ["./node_modules/**/*", "./build/**/*"]
+}
