@@ -1,11 +1,11 @@
 {
-  "name": "@maruware/raccoon",
-  "author": "maruware",
+  "name": "@goodylabs/raccoon",
+  "author": "goodylabs",
   "description": "A Collaborative Filtering Recommendation Engine for Node.js utilizing Redis",
-  "version": "0.4.2",
+  "version": "1.0.0",
   "repository": {
     "type": "git",
-    "url": "https://github.com/maruware/recommendationRaccoon.git"
+    "url": "https://github.com/goodylabs/recommendationRaccoon.git"
   },
   "scripts": {
     "build": "npm-run-all clean tsc",
@@ -33,7 +33,7 @@
   "licenses": [
     {
       "type": "MIT",
-      "url": "https://github.com/maruware/recommendationRaccoon/LICENSE"
+      "url": "https://github.com/goodylabs/recommendationRaccoon/LICENSE"
     }
   ],
   "keywords": [
@@ -49,7 +49,7 @@
   "license": "MIT",
   "readmeFilename": "README.md",
   "bugs": {
-    "url": "https://github.com/maruware/recommendationRaccoon/issues"
+    "url": "https://github.com/goodylabs/recommendationRaccoon/issues"
   },
   "devDependencies": {
     "@types/ioredis": "^4.14.3",

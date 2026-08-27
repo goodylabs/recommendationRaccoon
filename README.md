@@ -1,7 +1,7 @@
 # recommendationRaccoon (raccoon)
 
-[![codecov](https://codecov.io/gh/maruware/recommendationRaccoon/branch/master/graph/badge.svg)](https://codecov.io/gh/maruware/recommendationRaccoon)
-[![Actions Status](https://github.com/maruware/recommendationRaccoon/workflows/test/badge.svg)](https://github.com/maruware/recommendationRaccoon/actions)
+[![codecov](https://codecov.io/gh/goodylabs/recommendationRaccoon/branch/master/graph/badge.svg)](https://codecov.io/gh/goodylabs/recommendationRaccoon)
+[![Actions Status](https://github.com/goodylabs/recommendationRaccoon/workflows/test/badge.svg)](https://github.com/goodylabs/recommendationRaccoon/actions)
 
 An easy-to-use collaborative filtering based recommendation engine and NPM module built on top of Node.js and Redis. The engine uses the Jaccard coefficient to determine the similarity between users and k-nearest-neighbors to create recommendations. This module is useful for anyone with users, a store of products/movies/items, and the desire to give their users the ability to like/dislike and receive recommendations based on similar users. Raccoon takes care of all the recommendation and rating logic. It can be paired with any database as it does not keep track of any user/item information besides a unique ID.
 
@@ -17,7 +17,7 @@ Updated for ES6.
 ## Install
 
 ```bash
-npm install @maruware/raccoon
+npm install @goodylabs/raccoon
 ```
 
 ## Usage
@@ -25,7 +25,7 @@ npm install @maruware/raccoon
 Raccoon keeps track of the ratings and recommendations from your users. It does not need to store any meta data of the user or product aside from an id. To get started:
 
 ```ts
-import Raccoon from '@maruware/raccoon'
+import Raccoon from '@goodylabs/raccoon'
 
 async () => {
   const raccoon = new Raccoon({
