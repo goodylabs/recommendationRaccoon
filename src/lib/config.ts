@@ -1,5 +1,10 @@
 import { ILogger } from './logger';
 
+export interface RedisSentinelNode {
+  host: string;
+  port: number;
+}
+
 export interface ConfigArgs {
   nearestNeighbors?: number;
   className?: string;
@@ -8,6 +13,9 @@ export interface ConfigArgs {
   redisUrl?: string;
   redisPort?: number;
   redisAuth?: string;
+  /** When set (non-empty), the client connects via Redis Sentinel instead of a single host/port. */
+  redisSentinels?: RedisSentinelNode[];
+  redisSentinelName?: string;
   logger: ILogger;
 }
 
@@ -26,6 +34,10 @@ export default class Config {
 
   redisAuth: string;
 
+  redisSentinels?: RedisSentinelNode[];
+
+  redisSentinelName: string;
+
   logger: ILogger;
 
   constructor({
@@ -36,6 +48,8 @@ export default class Config {
     redisUrl,
     redisPort,
     redisAuth,
+    redisSentinels,
+    redisSentinelName,
     logger,
   }: ConfigArgs) {
     this.nearestNeighbors = nearestNeighbors || 5;
@@ -45,6 +59,8 @@ export default class Config {
     this.redisUrl = redisUrl || process.env.RACCOON_REDIS_URL || '127.0.0.1';
     this.redisPort = redisPort || (process.env.RACCOON_REDIS_PORT ? parseInt(process.env.RACCOON_REDIS_PORT) : 6379);
     this.redisAuth = redisAuth || process.env.RACCOON_REDIS_AUTH || '';
+    this.redisSentinels = redisSentinels;
+    this.redisSentinelName = redisSentinelName || 'mymaster';
 
     this.logger = logger;
   }
