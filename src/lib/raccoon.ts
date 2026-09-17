@@ -37,7 +37,13 @@ export default class Raccoon {
 
   constructor(config: ConfigArgs) {
     this.config = new Config(config);
-    this.client = createClient(this.config.redisPort, this.config.redisUrl, this.config.redisAuth);
+    this.client = createClient({
+      redisPort: this.config.redisPort,
+      redisUrl: this.config.redisUrl,
+      redisAuth: this.config.redisAuth,
+      redisSentinels: this.config.redisSentinels,
+      redisSentinelName: this.config.redisSentinelName,
+    });
   }
 
   liked(userId: string, itemId: string, options: UpdateRecsOptions = {}) {
