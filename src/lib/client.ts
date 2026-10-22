@@ -10,6 +10,10 @@ export interface CreateClientOptions {
   redisSentinelName?: string;
 }
 
+// After a failover the old master stays up as a replica and keeps the existing connection, so every write fails
+// with READONLY. Reconnecting makes ioredis ask Sentinel for the current master; 2 also resends the failed command.
+export const reconnectOnReadonly = (error: Error): boolean | 2 => (error.message.startsWith('READONLY') ? 2 : false);
+
 export const createClient = ({
   redisPort,
   redisUrl,
@@ -22,6 +26,7 @@ export const createClient = ({
       sentinels: redisSentinels,
       name: redisSentinelName || 'mymaster',
       password: redisAuth,
+      reconnectOnError: reconnectOnReadonly,
     });
   }
 
